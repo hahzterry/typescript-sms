@@ -879,7 +879,7 @@ export interface CreateImport {
   resource?: 'contacts';
   parser?: 'default';
   /** Map CSV headers to fields, including email_status, email_opt_out and opt_in_at. Recognizable unsubscribes remain protected even when skipped. */
-  columns?: Record<string, string | null> | string;
+  columns?: Record<string, string | null> | string | null;
   options?: {
     listIds?: number[];
     emailAction?: 'unsubscribe' | 'block';
