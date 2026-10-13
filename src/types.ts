@@ -620,9 +620,12 @@ export interface Import {
   totalRows: number | null;
   successRows: number | null;
   failedRows: number | null;
-  rowsProcessed: number;
-  progressPct: number | null;
+  warningRows: number;
+  emailRows: { subscribed: number; unsubscribed: number; blocked: number } | null;
+  rowCounters: { totalRows: number; processedRows: number; successRows: number; failedRows: number; warningRows: number; remainingRows: number; estimatedTotalRows: number | null };
+  progress: { status: 'pending' | 'running' | 'complete' | 'failed'; pct: number | null; stages: Array<{ key: string; label: string; count: number; state: 'done' | 'active' | 'pending' | 'failed' }> };
   importErrors: unknown[][];
+  importWarnings: unknown[][];
   columns: Record<string, unknown> | null;
   options: Record<string, unknown> | null;
   assignedListIds: number[];
@@ -859,13 +862,27 @@ export interface CreateMessage {
   idempotencyKey?: string;
 }
 
+export interface BulkContactAction {
+  actionType: 'add_to_list' | 'remove_from_list' | 'delete' | 'unsubscribe_email';
+  ids: number[];
+  listId?: number;
+}
+
+export interface BulkContactResult {
+  affected: number;
+  action: BulkContactAction['actionType'];
+  listId?: number;
+}
+
 export interface CreateImport {
   signedId: string;
   resource?: 'contacts';
   parser?: 'default';
-  columns?: Record<string, string> | string;
+  /** Map CSV headers to fields, including email_status, email_opt_out and opt_in_at. Recognizable unsubscribes remain protected even when skipped. */
+  columns?: Record<string, string | null> | string;
   options?: {
     listIds?: number[];
+    emailAction?: 'unsubscribe' | 'block';
     [key: string]: unknown;
   } | string;
 }
