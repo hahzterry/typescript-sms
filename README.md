@@ -12,6 +12,10 @@ All plans, including free plans, have full access to Nitrosend MCP/API/CLI. API 
 npm install @nitrosend/sdk
 ```
 
+It loads with `import` and with `require`, on Node 18 or later. To run a
+TypeScript file directly, use Node 22.18 or later (`node send.ts`) or
+`npx tsx send.ts`; otherwise compile it with `tsc` first.
+
 ## Get your API key
 
 1. Log in at [app.nitrosend.com](https://app.nitrosend.com)
@@ -36,10 +40,17 @@ will refuse to authenticate with one.
 ```ts
 import { Nitrosend } from '@nitrosend/sdk';
 
-const ns = new Nitrosend('nskey_live_...');
+const apiKey = process.env.NITROSEND_API_KEY;
+if (!apiKey) throw new Error('Set NITROSEND_API_KEY');
+const ns = new Nitrosend(apiKey);
 
 await ns.contacts.create({ email: 'alice@example.com', firstName: 'Alice' });
 ```
+
+Keep the key in the environment, never in source. Under strict TypeScript,
+`process.env` needs `"types": ["node"]` in your tsconfig, and the check above
+narrows the key from `string | undefined`. From CommonJS:
+`const { Nitrosend } = require('@nitrosend/sdk');`
 
 ### Browser (public key)
 
@@ -63,7 +74,7 @@ Under strict TypeScript 7, `process.env` here needs `"types": ["node"]` in your 
 ```ts
 import { Nitrosend } from '@nitrosend/sdk';
 
-const ns = new Nitrosend('nskey_live_...');
+const ns = new Nitrosend(process.env.NITROSEND_API_KEY!);
 
 // Create a contact
 const contact = await ns.contacts.create({
@@ -83,14 +94,22 @@ await ns.events.create({
 const campaign = await ns.campaigns.create({ name: 'March Sale', channel: 'email' });
 await ns.campaigns.send(campaign.id);
 
-// Send a transactional message (receipt, OTP, reset — no campaign needed)
+// Send a transactional message (receipt, OTP, reset: no campaign needed)
 const msg = await ns.messages.send({
   channel: 'email',
   to: 'alice@example.com',
   subject: 'Your order is confirmed',
+  html: '<p>Thanks for your order!</p>',
   body: 'Thanks for your order!',
-}, 'order-123-receipt'); // optional idempotency key
+}, 'order-123-receipt');
 ```
+
+`messages.send` requires its second argument, an idempotency key, as the API
+does. A retry with the same key and payload returns the original message
+instead of sending twice, so give each message its own stable key and reuse it
+only to retry that message. `html` is the email's HTML; `body` is plain text,
+used as the alternative when `html` is set (HTML in `body` is escaped).
+
 
 ## Resources
 
@@ -106,7 +125,7 @@ const msg = await ns.messages.send({
 | `ns.brands` | `list`, `get`, `create`, `update`, `delete`, `scrape` |
 | `ns.segments` | `list`, `get`, `create`, `update`, `delete`, `count` |
 | `ns.lists` | `list`, `get`, `create`, `update`, `delete` |
-| `ns.messages` | `list`\*, `get`, `send` |
+| `ns.messages` | `list`\*, `get`, `send(params, idempotencyKey)` |
 | `ns.images` | `ingest`, `createDirectUpload` |
 | `ns.suppressions` | `list`\* |
 | `ns.webhooks` | `list`\*, `get`, `reveal`, `create`, `update`, `delete`, `test`, `deliveries`\*, `verify` |

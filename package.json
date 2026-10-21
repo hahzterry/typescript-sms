@@ -16,22 +16,29 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
     },
     "./browser": {
-      "import": "./dist/browser.js",
-      "types": "./dist/browser.d.ts"
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "rm -rf dist && node scripts/generate-version.mjs && tsc",
+    "build": "rm -rf dist && node scripts/generate-version.mjs && tsc && tsc -p tsconfig.cjs.json && node scripts/mark-cjs.mjs",
     "dev": "tsc --watch",
     "test": "node --test --import tsx 'src/**/*.test.ts'",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test:package": "npm run build && node scripts/check-package.mjs"
   },
   "engines": {
     "node": ">=18.0.0"

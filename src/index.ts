@@ -19,6 +19,7 @@ export { NitrosendError, BadRequestError, AuthenticationError, PaymentRequiredEr
 export type { PaginatedResponse, PaginationMeta } from './pagination.js';
 export { verifyWebhook, WebhookVerificationError, type VerifyWebhookOptions, type WebhookHeaders } from './webhook.js';
 export type * from './types.js';
+export { VERSION } from './version.generated.js';
 
 export class Nitrosend {
   readonly account: AccountResource;

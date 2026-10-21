@@ -1,8 +1,7 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { Nitrosend } from './index.js';
-import { VERSION } from './version.generated.js';
+import { Nitrosend, VERSION } from './index.js';
 
 const PACKAGE_VERSION: string = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
@@ -65,4 +64,37 @@ test('contact requests distinguish omitted consent from explicit true, false and
     { email: 'alice@example.com', opt_in: false },
     { email: 'alice@example.com', opt_in: null },
   ]);
+});
+
+test('messages.send refuses to send without an idempotency key', async () => {
+  const seen = captureHeaders();
+  const ns = new Nitrosend('nskey_test_abc123');
+  const params = { channel: 'email' as const, to: 'alice@example.com', subject: 'Hi', body: 'Hello' };
+
+  for (const key of [undefined, '', '  ']) {
+    await assert.rejects(
+      // @ts-expect-error the key is required; plain JavaScript can still omit it
+      ns.messages.send(params, key),
+      /messages\.send needs an idempotency key/,
+    );
+  }
+  assert.equal(seen.length, 0);
+});
+
+test('a retried send carries the same idempotency key', async () => {
+  const keys: Array<string | null> = [];
+  globalThis.fetch = async (_input, init) => {
+    keys.push(new Headers(init?.headers).get('idempotency-key'));
+    const status = keys.length === 1 ? 502 : 201;
+    return new Response(JSON.stringify({ id: 9, status: 'queued' }), { status, headers: { 'Content-Type': 'application/json' } });
+  };
+  const ns = new Nitrosend('nskey_test_abc123');
+
+  const message = await ns.messages.send(
+    { channel: 'email', to: 'alice@example.com', subject: 'Hi', html: '<p>Hello</p>' },
+    'receipt-9',
+  );
+
+  assert.equal(message.id, 9);
+  assert.deepEqual(keys, ['receipt-9', 'receipt-9']);
 });

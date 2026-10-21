@@ -45,6 +45,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Check the package loads with require and import
+        run: node scripts/check-package.mjs
+
       - name: Publish to npm
         run: |
           name="$(node -p 'require("./package.json").name')"

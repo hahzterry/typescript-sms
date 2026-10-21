@@ -847,8 +847,14 @@ export type UpdateList = CreateList;
 export interface CreateMessage {
   channel: 'email' | 'sms';
   to: string;
+  /** Email subject line; required for email unless `templateId` is set. */
   subject?: string;
+  /**
+   * Plain text. Required for SMS. For email, HTML here is escaped, and when
+   * `html` is set this is the plain-text alternative.
+   */
   body?: string;
+  /** The email's HTML body. */
   html?: string;
   templateId?: number;
   contactId?: number;
@@ -859,7 +865,6 @@ export interface CreateMessage {
   headers?: Record<string, string>;
   tags?: Record<string, string | number | boolean>;
   data?: Record<string, unknown>;
-  idempotencyKey?: string;
 }
 
 export interface BulkContactAction {
